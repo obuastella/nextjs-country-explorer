@@ -1,70 +1,63 @@
 "use client";
-import { Button } from "@/components/ui/button";
-import { Toaster } from "@/components/ui/sonner";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { toast } from "sonner";
 
-const mockCountries = [
-  {
-    id: "1",
-    name: "United States",
-    flag: "https://flagcdn.com/w320/us.png",
-    population: 331002651,
-    area: 9833520,
-    gdp: 21427700,
-    region: "Americas",
-  },
-  {
-    id: "2",
-    name: "Canada",
-    flag: "https://flagcdn.com/w320/ca.png",
-    population: 37742154,
-    area: 9984670,
-    gdp: 1736426,
-    region: "Americas",
-  },
-  {
-    id: "3",
-    name: "Germany",
-    flag: "https://flagcdn.com/w320/de.png",
-    population: 83783942,
-    area: 357022,
-    gdp: 3845630,
-    region: "Europe",
-  },
-  {
-    id: "4",
-    name: "Japan",
-    flag: "https://flagcdn.com/w320/jp.png",
-    population: 126476461,
-    area: 377975,
-    gdp: 5081770,
-    region: "Asia",
-  },
-];
+import { useState } from "react";
+import { useQuery, gql } from "@apollo/client";
+import { Button } from "@/components/ui/button";
+import { Toaster, toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { Loader } from "lucide-react";
+
+const GET_COUNTRIES = gql`
+  query GetCountries {
+    countries {
+      code
+      name
+      emoji
+    }
+  }
+`;
+type Country = {
+  code: string;
+  name: string;
+  emoji: string;
+};
 
 export default function CountriesPage() {
   const [search, setSearch] = useState("");
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const router = useRouter();
+
+  // Fetch countries from GraphQL API
+  const { data, loading, error } = useQuery(GET_COUNTRIES);
+
+  if (loading)
+    return (
+      <div className="w-full h-screen flex justify-center items-center">
+        <Loader className="my-auto  animate-spin mx-auto" />;
+      </div>
+    );
+  if (error) return <p>Error: {error.message}</p>;
+
+  const countries = data?.countries || [];
+
   // Handle country selection
-  const handleSelect = (id: string) => {
-    setSelectedCountries((prev) => {
-      if (prev.includes(id)) {
-        return prev.filter((countryId) => countryId !== id); // Deselect if already selected
-      }
-      return prev.length < 2 ? [...prev, id] : prev; // Limit selection to 2 countries
-    });
+  const handleSelect = (code: string) => {
+    setSelectedCountries((prev) =>
+      prev.includes(code)
+        ? prev.filter((c) => c !== code)
+        : prev.length < 2
+        ? [...prev, code]
+        : prev
+    );
   };
 
   // Get selected country data
-  const selectedData = mockCountries.filter((country) =>
-    selectedCountries.includes(country.id)
+  const selectedData = countries.filter((country: Country) =>
+    selectedCountries.includes(country.code)
   );
 
   // Filter countries based on search
-  const filteredCountries = mockCountries.filter((country) =>
+  const filteredCountries = countries.filter((country: Country) =>
     country.name.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -74,6 +67,7 @@ export default function CountriesPage() {
       router.push("/");
     }, 1000);
   };
+
   return (
     <div className="p-6">
       <Toaster position="top-right" richColors />
@@ -92,8 +86,10 @@ export default function CountriesPage() {
         onChange={(e) => setSearch(e.target.value)}
         className="w-full p-2 mb-4 border rounded-md"
       />
+
       <h2 className="my-2">Please select two countries to compare:</h2>
-      {/* Countries Table with Selection */}
+
+      {/* Countries Table */}
       <div className="overflow-x-auto">
         <table className="w-full border-collapse border border-gray-300">
           <thead>
@@ -101,106 +97,45 @@ export default function CountriesPage() {
               <th className="border p-2">Select</th>
               <th className="border p-2">Flag</th>
               <th className="border p-2">Name</th>
-              <th className="border p-2">Population</th>
-              <th className="border p-2">Area (km²)</th>
-              <th className="border p-2">Region</th>
             </tr>
           </thead>
           <tbody>
-            {filteredCountries.map((country) => (
-              <tr key={country.id} className="text-center hover:bg-gray-100">
+            {filteredCountries.map((country: Country) => (
+              <tr key={country.code} className="text-center hover:bg-gray-100">
                 <td className="border p-2">
                   <input
                     type="checkbox"
-                    checked={selectedCountries.includes(country.id)}
-                    onChange={() => handleSelect(country.id)}
+                    checked={selectedCountries.includes(country.code)}
+                    onChange={() => handleSelect(country.code)}
                     disabled={
                       selectedCountries.length >= 2 &&
-                      !selectedCountries.includes(country.id)
+                      !selectedCountries.includes(country.code)
                     }
                   />
                 </td>
-                <td className="border p-2">
-                  <img
-                    src={country.flag}
-                    alt={country.name}
-                    className="w-10 h-6"
-                  />
-                </td>
+                <td className="border p-2">{country.emoji}</td>
                 <td className="border p-2 font-semibold">{country.name}</td>
-                <td className="border p-2">
-                  {country.population.toLocaleString()}
-                </td>
-                <td className="border p-2">{country.area.toLocaleString()}</td>
-                <td className="border p-2">{country.region}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      {/* Comparison Section */}
+      {/* Country Comparison */}
       {selectedData.length === 2 && (
         <div className="mt-6 p-6 border rounded-lg shadow-md">
           <h2 className="text-xl font-semibold mb-4">Country Comparison</h2>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
               <p className="text-lg font-bold">{selectedData[0].name}</p>
-              <img
-                src={selectedData[0].flag}
-                alt={selectedData[0].name}
-                className="mx-auto w-16 h-10"
-              />
+              <p className="text-3xl">{selectedData[0].emoji}</p>
             </div>
             <div className="font-semibold text-gray-600">VS</div>
             <div>
               <p className="text-lg font-bold">{selectedData[1].name}</p>
-              <img
-                src={selectedData[1].flag}
-                alt={selectedData[1].name}
-                className="mx-auto w-16 h-10"
-              />
+              <p className="text-3xl">{selectedData[1].emoji}</p>
             </div>
           </div>
-
-          <table className="w-full mt-4 border-collapse border border-gray-300">
-            <thead>
-              <tr className="bg-gray-200">
-                <th className="border p-2">Attribute</th>
-                <th className="border p-2">{selectedData[0].name}</th>
-                <th className="border p-2">{selectedData[1].name}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td className="border p-2 font-semibold">Population</td>
-                <td className="border p-2">
-                  {selectedData[0].population.toLocaleString()}
-                </td>
-                <td className="border p-2">
-                  {selectedData[1].population.toLocaleString()}
-                </td>
-              </tr>
-              <tr>
-                <td className="border p-2 font-semibold">Area (km²)</td>
-                <td className="border p-2">
-                  {selectedData[0].area.toLocaleString()}
-                </td>
-                <td className="border p-2">
-                  {selectedData[1].area.toLocaleString()}
-                </td>
-              </tr>
-              <tr>
-                <td className="border p-2 font-semibold">GDP (Billion $)</td>
-                <td className="border p-2">
-                  {selectedData[0].gdp.toLocaleString()}
-                </td>
-                <td className="border p-2">
-                  {selectedData[1].gdp.toLocaleString()}
-                </td>
-              </tr>
-            </tbody>
-          </table>
         </div>
       )}
     </div>

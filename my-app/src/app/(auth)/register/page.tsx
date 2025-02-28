@@ -8,7 +8,7 @@ import { toast } from "sonner";
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState<Boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
