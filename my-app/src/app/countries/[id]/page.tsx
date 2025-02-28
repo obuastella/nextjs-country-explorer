@@ -31,34 +31,52 @@ export default function CountryDetails() {
   if (loading)
     return (
       <div className="w-full h-screen flex justify-center items-center">
-        <Loader className="my-auto animate-spin mx-auto" />;
+        <Loader className="animate-spin text-gray-500 w-12 h-12" />
       </div>
     );
-  if (error) return <p>Error: {error.message}</p>;
+
+  if (error)
+    return (
+      <div className="w-full h-screen flex justify-center items-center">
+        <p className="text-red-500 text-lg font-semibold">
+          Error: {error.message}
+        </p>
+      </div>
+    );
 
   const country = data?.country;
 
   return (
-    <div className="p-6">
-      <Button onClick={() => router.back()} className="mb-4">
-        Back
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-6">
+      <Button
+        onClick={() => router.back()}
+        className="mb-6 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-lg"
+      >
+        ← Back
       </Button>
 
-      <h1 className="text-3xl font-bold">
-        {country.name} {country.emoji}
-      </h1>
-      <p className="text-xl mt-4">
-        <strong>Capital:</strong> {country.capital}
-      </p>
-      <p className="text-xl">
-        <strong>Currency:</strong> {country.currency}
-      </p>
-      <p className="text-xl">
-        <strong>Languages:</strong>{" "}
-        {country.languages
-          .map((lang: { name: string }) => lang.name)
-          .join(", ")}
-      </p>
+      <div className="bg-white shadow-lg rounded-lg p-8 max-w-lg w-full text-center border">
+        <h1 className="text-4xl font-bold mb-4 flex items-center justify-center">
+          {country.emoji} {country.name}
+        </h1>
+
+        <div className="text-lg text-gray-700 space-y-3">
+          <p>
+            <span className="font-semibold text-gray-900">Capital:</span>{" "}
+            {country.capital}
+          </p>
+          <p>
+            <span className="font-semibold text-gray-900">Currency:</span>{" "}
+            {country.currency}
+          </p>
+          <p>
+            <span className="font-semibold text-gray-900">Languages:</span>{" "}
+            {country.languages
+              .map((lang: { name: string }) => lang.name)
+              .join(", ")}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
