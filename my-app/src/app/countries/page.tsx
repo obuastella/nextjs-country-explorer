@@ -16,6 +16,7 @@ const GET_COUNTRIES = gql`
     }
   }
 `;
+
 type Country = {
   code: string;
   name: string;
@@ -25,6 +26,8 @@ type Country = {
 export default function CountriesPage() {
   const [search, setSearch] = useState("");
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 10; // Display 10 countries per page
   const router = useRouter();
 
   // Fetch countries from GraphQL API
@@ -33,7 +36,7 @@ export default function CountriesPage() {
   if (loading)
     return (
       <div className="w-full h-screen flex justify-center items-center">
-        <Loader className="my-auto  animate-spin mx-auto" />;
+        <Loader className="animate-spin mx-auto" />;
       </div>
     );
   if (error) return <p>Error: {error.message}</p>;
@@ -61,6 +64,13 @@ export default function CountriesPage() {
     country.name.toLowerCase().includes(search.toLowerCase())
   );
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredCountries.length / itemsPerPage);
+  const paginatedCountries = filteredCountries.slice(
+    (page - 1) * itemsPerPage,
+    page * itemsPerPage
+  );
+
   const handleLogout = () => {
     toast.success("Logged out successfully");
     setTimeout(() => {
@@ -83,7 +93,10 @@ export default function CountriesPage() {
         type="text"
         placeholder="Search for a country..."
         value={search}
-        onChange={(e) => setSearch(e.target.value)}
+        onChange={(e) => {
+          setSearch(e.target.value);
+          setPage(1); // Reset to first page on search
+        }}
         className="w-full p-2 mb-4 border rounded-md"
       />
 
@@ -100,7 +113,7 @@ export default function CountriesPage() {
             </tr>
           </thead>
           <tbody>
-            {filteredCountries.map((country: Country) => (
+            {paginatedCountries.map((country: Country) => (
               <tr key={country.code} className="text-center hover:bg-gray-100">
                 <td className="border p-2">
                   <input
@@ -120,6 +133,27 @@ export default function CountriesPage() {
           </tbody>
         </table>
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center gap-4 mt-4">
+          <Button
+            onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+            disabled={page === 1}
+          >
+            Previous
+          </Button>
+          <span>
+            Page {page} of {totalPages}
+          </span>
+          <Button
+            onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+            disabled={page === totalPages}
+          >
+            Next
+          </Button>
+        </div>
+      )}
 
       {/* Country Comparison */}
       {selectedData.length === 2 && (
